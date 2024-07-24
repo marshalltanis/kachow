@@ -1,0 +1,6 @@
+{
+    "pretrade": "wss://demo-iguspretrade.ig.com/pretrade",
+    "trade": "wss://demo-igustrade.ig.com/trade",
+    "posttrade": "wss://demo-igustrade.ig.com/trade",
+    "chart": "wss://demo-iguspretrade.ig.com/pretrade"
+}
