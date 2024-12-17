@@ -75,13 +75,19 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   if(tickNumber == 5){
-      
-   
-   }
-   
-   
+   MqlTick last_tick;
+   SymbolInfoTick(Symbol(), last_tick);
+   int spread = MarketInfo(Symbol(), MODE_SPREAD);
+   string info_to_send = StringFormat("time:%s , bid:%f , ask:%f , volume:%f , spread:%d\n\r" , last_tick.time, last_tick.bid, last_tick.ask, last_tick.volume, spread);
+   if(clientConnect) 
+   { 
+      clientConnect.Send(info_to_send);
+   } 
+   else{
+      printf(info_to_send);
+   } 
   }
+   
 //+------------------------------------------------------------------+
 //| Tester function                                                  |
 //+------------------------------------------------------------------+
