@@ -1,13 +1,13 @@
 import socket
 import json
 import os
-from time import time,sleep
+import time
 import uuid
 import sys
 import ssl
 
 
-BYTES_TO_RECEIVE = 4096
+BYTES_TO_RECEIVE = 1024
 
 class Mt4Tick:
     time: str
@@ -46,10 +46,13 @@ class MT4:
             return False
 
     def disconnect(self):
-        if not self.mt4_connect:
+        if not self.is_connected():
+            print("Nothing to disconnect")
             return
         else:
+            print("Closing connection")
             self.mt4_connect.close()
+            self.mt4_connect = None
 
     def create_session(self):
         if not self.connect():
@@ -60,18 +63,40 @@ class MT4:
 
     def receive_tick_info(self):
         data = []
+        self.mt4_connect.settimeout(10)
         while True:
-            data_chunk = self.mt4_connect.recv(BYTES_TO_RECEIVE)
-            print(data_chunk)
-            if not data_chunk:
+            try:
+                data_chunk = self.mt4_connect.recv(BYTES_TO_RECEIVE)
+            except socket.timeout:
+                print("No data received within 10 seconds\n")
+                if self.is_connected():
+                    continue
+                else:
+                    return None
+            if b'\n\r' in data_chunk:
+                print(f"Received tick info from socket: {data_chunk}")
+                data.append(data_chunk)
                 break
-            data.append(data_chunk)
+            else:
+                data.append(data_chunk)
         string_data = b''.join(data).decode("UTF-8")
         print(string_data)
-        symbols = string_data.strip(',')
+        string_data.strip()
+        symbols = string_data.split(',')
         previous_tick = Mt4Tick()
         for symbol in symbols:
+            symbol.strip()
             current_field = symbol.split(':')
-            previous_tick[current_field[0]] = current_field[1]
+            setattr(previous_tick, current_field[0], current_field[1])
         return previous_tick
 
+    def is_connected(self):
+        if self.mt4_connect and self.mt4_connect.fileno != -1:
+            print("Socket connected!")
+            return True
+        else:
+            return False
+
+    def print_stats(self):
+        connection_status = "connected" if self.is_connected() else "disconnected"
+        print(f"At some point, stats will be printed here. For now, the session is {connection_status}\n")

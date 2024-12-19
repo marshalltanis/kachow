@@ -56,10 +56,15 @@ void OnChartEvent(const int id, const long& lparam, const double& dparam, const 
                printf("Multi-client coming in part two\n");
             }
          } else if (lparam == clientConnect.GetSocketHandle()) {
+            printf("Found activity on client socket\n");
             // Activity on client socket
          } else {
+            printf("Maybe I'm in here?");
             // Doesn't match a socket. Assume real key pres
          }
+      }
+      else{
+         printf("%d is the ID");
       }
    }
 //+------------------------------------------------------------------+
@@ -81,7 +86,15 @@ void OnTick()
    string info_to_send = StringFormat("time:%s , bid:%f , ask:%f , volume:%f , spread:%d\n\r" , last_tick.time, last_tick.bid, last_tick.ask, last_tick.volume, spread);
    if(clientConnect) 
    { 
-      clientConnect.Send(info_to_send);
+      if(clientConnect.IsSocketConnected()){
+         printf("Sending data %s\n",info_to_send);
+         clientConnect.Send(info_to_send);
+      }
+      else {
+         // Create disconnect function at some point
+         printf("Socket is closed, waiting for new connection");
+         clientConnect = NULL;
+      }
    } 
    else{
       printf(info_to_send);
