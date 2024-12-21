@@ -4,16 +4,23 @@ import matplotlib.pyplot as plt
 import os
 from keras.models import Sequential, load_model
 from keras.layers import Dense, LSTM, Dropout
+from scipy.stats import linregress
 
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import recall_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, mean_absolute_percentage_error
+
 
 STM = 100
 DROPOUT = 0.1
 MODEL_PATH = "./model.keras"
 
 class Model:
-    def __init__(self, filename: str, layers: int):
+    mae_threshold = 0.0012
+    rmse_threshold = 0.0018
+    r2_threshold = 0.6
+    mape_threashold = 0.5
+    test_data = "..\\data\\AUDUSD_H1.csv"
+    def __init__(self, filename: str, layers: int, recreate: bool):
         data = pd.read_csv(filename, index_col="Date", parse_dates=True)
         training_set = data.iloc[:,1:2].values
         self.sc = MinMaxScaler(feature_range=(0,1))
@@ -29,22 +36,25 @@ class Model:
         self.layers = layers
 
         print("Starting model creation")
-        self.__create_model()
+        self.__create_model(recreate)
 
         print("Starting test data creation")
-        self.test_data = self.__create_test_data("..\\data\\AUDUSD_H1.csv")
+        self.test_data = self.create_test_data(self.test_data)
 
         print("Evaluating model recall")
-        precision = self.model_accuracy(self.test_data[0], self.test_data[1])
+        model_ready = self.validate_model(self.test_data[0], self.test_data[1])
 
+        if not model_ready:
+            print("Need to tune the model more...")
+            return
         print("Saving model")
         self.model.save(MODEL_PATH)
 
         print("Ready for action")
 
 
-    def __create_model(self):
-        if os.path.exists(MODEL_PATH):
+    def __create_model(self, recreate:bool):
+        if os.path.exists(MODEL_PATH) and not recreate:
             print("Found existing model")
             self.model = load_model(MODEL_PATH)
         else:
@@ -63,7 +73,7 @@ class Model:
             model.fit(self.X_train, self.y_train, epochs=75, batch_size=32, verbose=2)
             self.model = model
 
-    def __create_test_data(self, filename: str):
+    def create_test_data(self, filename: str):
         test_data = pd.read_csv(filename, index_col="Date", parse_dates=True)
         real_stock_price = test_data.iloc[:, 1:2].values
 
@@ -90,11 +100,30 @@ class Model:
         plt.legend()
         plt.show()
 
-    def model_accuracy(self, real_stock_price, predicted_stock_price):
-        #recall = recall_score(real_stock_price[60:] , predicted_stock_price)
-        self.plot_prediction(real_stock_price, predicted_stock_price)
-        #print(f"Recall: {recall}")
-        #return recall
+    def validate_model(self, real_stock_price, predicted_stock_price):
+        mae = mean_absolute_error(real_stock_price[:-60], predicted_stock_price)
+        mse = mean_squared_error(real_stock_price[:-60], predicted_stock_price)
+        rmse = np.sqrt(mse)
+        r2 = r2_score(real_stock_price[:-60], predicted_stock_price)
+        mape = mean_absolute_percentage_error(real_stock_price[:-60], predicted_stock_price) * 100
+
+        print(f"Mean Absolute Error: {mae} - Mean Absolute Percentage Error: {mape} - Root Mean Squared Error: {rmse} - R-squared: {r2}")
+
+        if rmse >= self.rmse_threshold:
+            print(f"RMSE threshold violated: {rmse}")
+            return False
+        if mape >= self.mape_threashold:
+            print(f"MAPE threshold violated: {mape}")
+            return False
+        if r2 <= self.r2_threshold:
+            print(f"R2 threshold violated: {r2}")
+            return False
+        if mae >= self.mae_threshold:
+            print(f"MAE threshold violated: {mae}")
+            return False
+        return True
+
+
     
     def generate_stock_price(self, last_prices):
         prediction = self.model.predict(last_prices)

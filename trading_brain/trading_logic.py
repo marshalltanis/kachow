@@ -65,7 +65,8 @@ def control(trade_api, model):
                 c - connect to MT4 server
                 d - disconnect from MT4 server
                 s - display current connection status
-                m - generate & train model
+                m - validate model
+                plot - show graph of model predictions
                 e - kill program
                 r - disconnect, refetch & train model, reconnect
             """
@@ -90,6 +91,7 @@ def control(trade_api, model):
                 RUNNING_TASKS.pop("receive")
             print("Session disconnected")
             continue
+
         if command == "s":
             trade_api.print_stats()
             if "model" in RUNNING_TASKS:
@@ -101,12 +103,19 @@ def control(trade_api, model):
                     print("Process has finished")
                     RUNNING_TASKS.pop("model")
             continue
-
+        if command == "m":
+            test_data = model.create_test_data(model.test_data)
+            model.validate_model(test_data[0], test_data[1])
+        if command == "plot":
+            test_data = model.create_test_data(model.test_data)
+            model.plot_prediction(test_data[0], test_data[1])
         if command == "e":
-            data_manager["receive"]["run_flag"] = False
-            trade_api.disconnect()
-            RUNNING_TASKS["receive"].join()
-            RUNNING_TASKS.pop("receive")
+            if "receive" in data_manager:
+                data_manager["receive"]["run_flag"] = False
+            if "receive" in RUNNING_TASKS:
+                trade_api.disconnect()
+                RUNNING_TASKS["receive"].join()
+                RUNNING_TASKS.pop("receive")
             return
 
 
@@ -116,10 +125,9 @@ def initialize_model():
     if not model:
         if not os.path.exists(TRAINING_DATA):
             print(f"Check the path of the data folder - {TRAINING_DATA}")
-        model = RNN.Model(TRAINING_DATA, 3)
+        model = RNN.Model(TRAINING_DATA, 2, True)
         print("Model initialized, waiting for commands")
     return model
-
 
 def create_sessions(trade_api):
     trade_api.create_session()
