@@ -15,6 +15,9 @@ class Mt4Tick:
     bid: str
     volume: str
     spread: str
+    open: str
+    close: str
+
 
 
 class MT4:

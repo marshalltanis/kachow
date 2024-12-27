@@ -27,6 +27,10 @@ class Model:
     r2_threshold = 0.9
     mape_threashold = 4
     test_data = "..\\data\\AUDUSD_H1.csv"
+    last_sequence = []
+    validation_data = []
+    current_index = 0
+    predictions = []
     def __init__(self, filename: str, layers: int, recreate: bool):
         data = pd.read_csv(filename, index_col="Date", parse_dates=True)
         training_set = data.iloc[:,1:2].values
@@ -141,7 +145,25 @@ class Model:
         return True
 
 
-    
+    def predict_next_open(self, current_open):
+        print("Starting prediction of next open")
+        if len(self.last_sequence) >= SEQUENCE_LENGTH:
+            if self.current_index % SEQUENCE_LENGTH == 0:
+                print(f"Storing validation data from last {SEQUENCE_LENGTH} open data")
+                self.validation_data = self.last_sequence
+            self.last_sequence.pop(0)
+            input_sequence = np.array(self.last_sequence).reshape(1, SEQUENCE_LENGTH, 1)
+            prediction = self.model.predict(input_sequence)
+            print(prediction)
+            self.predictions.append(prediction)
+        if len(self.predictions) >= SEQUENCE_LENGTH:
+            #self.validate_model(self.validation_data, self.predictions)
+            print(f"Real values : {self.validation_data}\n Predicted Values : {self.predictions}")
+        self.current_index = (self.current_index + 1) % SEQUENCE_LENGTH
+        self.last_sequence.append(current_open)
+
+
+
     def generate_stock_price(self, last_prices):
         prediction = self.model.predict(last_prices)
         prediction = self.sc.inverse_transform(prediction)
