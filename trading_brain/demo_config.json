@@ -1,6 +1,4 @@
 {
-    "pretrade": "wss://demo-iguspretrade.ig.com/pretrade",
-    "trade": "wss://demo-igustrade.ig.com/trade",
-    "posttrade": "wss://demo-igustrade.ig.com/trade",
-    "chart": "wss://demo-iguspretrade.ig.com/pretrade"
+    "address": "127.0.0.1",
+    "port": 666
 }
