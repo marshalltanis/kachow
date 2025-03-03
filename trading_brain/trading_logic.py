@@ -13,7 +13,7 @@ import msvcrt
 
 # Redisgn this into a config
 RUNNING_TASKS = {}
-TRAINING_DATA = "..\\data\EURUSD_H1.csv"
+TRAINING_DATA = "..\\data\\EURUSD_H1.csv"
 PROCESS_QUEUE = multiprocessing.Queue()
 COMMAND_TARGET = multiprocessing.Value('u')
 RECV_LOG = f"log\\recv_log_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log"

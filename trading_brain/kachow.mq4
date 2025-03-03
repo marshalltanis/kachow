@@ -7,7 +7,7 @@
 #property version   "1.00"
 #property strict
 #include <socket-library-mt4-mt5.mqh>
-
+#define SOCKET_LIBRARY_USE_EVENTS
 //+------------------------------------------------------------------+
 //| Global Init                                   |
 //+------------------------------------------------------------------+
@@ -35,7 +35,7 @@ int OnInit()
       printf("Able to connect on port: %d\n", connectionPort);
    }
    CheckMarketStatus();
-   if(isMarketClosed){
+   /*if(isMarketClosed){
       EventSetTimer(TickInterval); // Set timer to trigger every `TickInterval` seconds
       handle = FileOpen(ConfigFile, FILE_CSV | FILE_READ);
       if (handle == INVALID_HANDLE)
@@ -43,9 +43,9 @@ int OnInit()
            Print("Error: Unable to open file.");
        }
    }
-   else{
-      #define SOCKET_LIBRARY_USE_EVENTS
-   }
+   else{*/
+  
+   //}
    MathSrand(GetTickCount());
    
    return(INIT_SUCCEEDED);
@@ -56,6 +56,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnChartEvent(const int id, const long& lparam, const double& dparam, const string& sparam)
    {
+      printf("char event");
       if (id == CHARTEVENT_KEYDOWN) {
          // May be a real key press, or a dummy notification
          // resulting from socket activity. If lparam matches
@@ -65,6 +66,7 @@ void OnChartEvent(const int id, const long& lparam, const double& dparam, const 
          // than a real key press.)
          
          if (lparam == brokerConnect.GetSocketHandle()) {
+            printf("Here");
             if(!clientConnect){
                clientConnect = brokerConnect.Accept();
                if(!clientConnect){
@@ -101,7 +103,7 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 //| Timer Event                                                      |
 //+------------------------------------------------------------------+
-void OnTimer()
+/*void OnTimer()
 {
     if (!isMarketClosed)
     {
@@ -109,13 +111,14 @@ void OnTimer()
         return; // Exit if market is open
     }
     while(!clientConnect){
+      printf("waiting on connect");
       clientConnect = brokerConnect.Accept();
     }
     printf("primed");
 
     // Simulate a tick
     SimulateTick();
-}
+}*/
 
 //+------------------------------------------------------------------+
 //| Check Market Status                                              |
@@ -136,6 +139,15 @@ void CheckMarketStatus()
 //+------------------------------------------------------------------+
 void OnTick()
   {
+   if(!clientConnect){
+      clientConnect = brokerConnect.Accept();
+      if(!clientConnect){
+         printf("Failed to create connection with client\n");
+      }
+      else {
+         printf("Primed and ready\n");
+      }
+   }
    MqlTick last_tick;
    SymbolInfoTick(Symbol(), last_tick);
    double spread = MarketInfo(Symbol(), MODE_SPREAD);
@@ -229,6 +241,7 @@ void SendTick(string info_to_send)
    } 
    else{
       printf(info_to_send);
+      printf("No client connected");
    }
 }
 
